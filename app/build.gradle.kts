@@ -13,8 +13,6 @@ android {
     targetSdk = 36
     versionCode = 1
     versionName = "1.0"
-
-    testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 
   signingConfigs {
@@ -49,12 +47,6 @@ android {
     targetCompatibility = JavaVersion.VERSION_11
   }
 
-  buildFeatures {
-    buildConfig = true
-  }
-
-  testOptions { unitTests { isIncludeAndroidResources = true } }
-
   dependenciesInfo {
     includeInApk = false
     includeInBundle = true
@@ -62,10 +54,5 @@ android {
 }
 
 dependencies {
-  implementation(libs.androidx.core.ktx)
-
-  testImplementation(libs.junit)
-  testImplementation(libs.robolectric)
-  testImplementation(libs.androidx.core)
-  testImplementation(libs.androidx.junit)
+  // Pure Native Android SDK - Zero external runtime dependencies
 }
