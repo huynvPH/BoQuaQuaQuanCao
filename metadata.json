@@ -2,5 +2,5 @@
   "name": "Bỏ Qua Quảng Cáo",
   "description": "Tự động phát hiện và bấm nút Bỏ qua quảng cáo trên YouTube siêu nhẹ, tiết kiệm pin.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }

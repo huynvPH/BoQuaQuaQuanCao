@@ -4,15 +4,13 @@ import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Dịch vụ tối giản, siêu nhẹ (Ultra-low RAM & CPU):
- * - Chỉ lắng nghe duy nhất ứng dụng YouTube (packageNames = com.google.android.youtube).
- * - Không xử lý âm thanh, không lưu log nặng, không chạy ngầm tốn pin.
- * - Chỉ quét đúng ID nút "skip_ad_button" và từ khóa bỏ qua khi YouTube hoạt động.
+ * Dịch vụ tối giản thuần Android (Zero Framework, Ultra-low RAM & CPU):
+ * - Chỉ lắng nghe duy nhất ứng dụng YouTube.
+ * - Cooldown thông minh sau khi skip (0% CPU).
+ * - Thu hồi triệt để bộ nhớ Binder IPC (recycle node).
+ * - So khớp CharSequence trực tiếp không cấp phát chuỗi mới trong heap.
  */
 class AdSkipAccessibilityService : AccessibilityService() {
 
@@ -20,7 +18,7 @@ class AdSkipAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        _isServiceRunning.value = true
+        isServiceRunning = true
 
         val info = serviceInfo ?: AccessibilityServiceInfo()
         info.packageNames = TARGET_PACKAGES
@@ -29,46 +27,69 @@ class AdSkipAccessibilityService : AccessibilityService() {
         info.feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
         info.flags = AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS or
                 AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS
-        info.notificationTimeout = 100
+        info.notificationTimeout = 250
         serviceInfo = info
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
 
-        val pkg = event.packageName?.toString() ?: return
-        if (pkg != YOUTUBE_PKG) return
-
         val now = System.currentTimeMillis()
-        if (now - lastClickTime < 800L) return
+        // Cooldown 4 giây sau khi bấm thành công: 0% CPU, thoát ngay lập tức
+        if (now - lastClickTime < 4000L) return
 
+        val pkg = event.packageName ?: return
+        if (!pkg.contentEquals(YOUTUBE_PKG)) return
+
+        // 1. Kiểm tra nhanh node nguồn của sự kiện trước (tránh quét toàn bộ cây giao diện)
+        val source = event.source
+        if (source != null) {
+            try {
+                if (checkAndClickNode(source)) {
+                    lastClickTime = now
+                    return
+                }
+            } finally {
+                source.recycle()
+            }
+        }
+
+        // 2. Quét cây giao diện chính nếu kiểm tra nhanh chưa thấy
         val root = rootInActiveWindow ?: return
         try {
-            // 1. Quét nhanh theo ID chuẩn của YouTube
+            // Quét theo ID chuẩn của YouTube
             for (id in TARGET_IDS) {
                 val nodes = root.findAccessibilityNodeInfosByViewId(id)
                 if (!nodes.isNullOrEmpty()) {
-                    for (node in nodes) {
-                        if (tryClick(node)) {
-                            lastClickTime = now
-                            return
-                        }
-                    }
-                }
-            }
-
-            // 2. Quét nhanh theo từ khóa tiếng Việt & tiếng Anh
-            for (text in TARGET_TEXTS) {
-                val nodes = root.findAccessibilityNodeInfosByText(text)
-                if (!nodes.isNullOrEmpty()) {
-                    for (node in nodes) {
-                        val content = node.text?.toString() ?: node.contentDescription?.toString() ?: ""
-                        if (isSkipMatch(content)) {
+                    try {
+                        for (node in nodes) {
                             if (tryClick(node)) {
                                 lastClickTime = now
                                 return
                             }
                         }
+                    } finally {
+                        nodes.forEach { it.recycle() }
+                    }
+                }
+            }
+
+            // Quét theo từ khóa
+            for (text in TARGET_TEXTS) {
+                val nodes = root.findAccessibilityNodeInfosByText(text)
+                if (!nodes.isNullOrEmpty()) {
+                    try {
+                        for (node in nodes) {
+                            val content = node.text ?: node.contentDescription
+                            if (isSkipMatch(content)) {
+                                if (tryClick(node)) {
+                                    lastClickTime = now
+                                    return
+                                }
+                            }
+                        }
+                    } finally {
+                        nodes.forEach { it.recycle() }
                     }
                 }
             }
@@ -77,9 +98,25 @@ class AdSkipAccessibilityService : AccessibilityService() {
         }
     }
 
-    private fun isSkipMatch(text: String): Boolean {
-        val s = text.trim().lowercase()
-        return s == "bỏ qua quảng cáo" || s == "bỏ qua" || s == "skip ad" || s == "skip ads" || s == "skip"
+    private fun checkAndClickNode(node: AccessibilityNodeInfo): Boolean {
+        val viewId = node.viewIdResourceName
+        if (viewId != null) {
+            for (id in TARGET_IDS) {
+                if (viewId.contentEquals(id)) {
+                    return tryClick(node)
+                }
+            }
+        }
+        val content = node.text ?: node.contentDescription
+        if (isSkipMatch(content)) {
+            return tryClick(node)
+        }
+        return false
+    }
+
+    private fun isSkipMatch(text: CharSequence?): Boolean {
+        if (text == null || text.isEmpty()) return false
+        return text.contains("Bỏ qua", ignoreCase = true) || text.contains("Skip", ignoreCase = true)
     }
 
     private fun tryClick(node: AccessibilityNodeInfo): Boolean {
@@ -87,19 +124,24 @@ class AdSkipAccessibilityService : AccessibilityService() {
         while (current != null) {
             if (current.isClickable) {
                 val clicked = current.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                if (clicked) return true
+                if (clicked) {
+                    current.recycle()
+                    return true
+                }
             }
-            current = current.parent
+            val parent = current.parent
+            current.recycle()
+            current = parent
         }
         return false
     }
 
     override fun onInterrupt() {
-        _isServiceRunning.value = false
+        isServiceRunning = false
     }
 
     override fun onDestroy() {
-        _isServiceRunning.value = false
+        isServiceRunning = false
         super.onDestroy()
     }
 
@@ -114,13 +156,12 @@ class AdSkipAccessibilityService : AccessibilityService() {
         )
 
         private val TARGET_TEXTS = arrayOf(
-            "Bỏ qua quảng cáo",
             "Bỏ qua",
-            "Skip Ad",
             "Skip"
         )
 
-        private val _isServiceRunning = MutableStateFlow(false)
-        val isServiceRunning: StateFlow<Boolean> = _isServiceRunning.asStateFlow()
+        @Volatile
+        var isServiceRunning: Boolean = false
+            private set
     }
 }
