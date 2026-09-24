@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Bỏ Qua Quảng Cáo</string>
+    <string name="accessibility_service_label">Dịch vụ Tự Động Bỏ Qua Quảng Cáo</string>
+    <string name="accessibility_service_description">Tự động phát hiện và bấm nút Bỏ qua quảng cáo trên YouTube ngay khi xuất hiện.</string>
+
+    <string name="status_running">Đang Hoạt Động</string>
+    <string name="status_stopped">Chưa Bật Dịch Vụ</string>
+    <string name="desc_running">Tự động bấm bỏ qua ngay khi nút Bỏ qua quảng cáo xuất hiện trên YouTube.</string>
+    <string name="desc_stopped">Chạm vào nút bên dưới để cấp quyền Hỗ trợ tiếp cận (Trợ năng). Sau khi bật, ứng dụng sẽ tự động chạy ngầm siêu nhẹ.</string>
+    <string name="btn_running">ĐÃ BẬT TRỢ NĂNG (BẤM ĐỂ XEM)</string>
+    <string name="btn_enable">BẬT DỊCH VỤ TRỢ NĂNG</string>
+    <string name="tip_restricted">Android 13/14+: Mở khóa cài đặt bị hạn chế</string>
+    <string name="hardware_opt_title">Tối ưu hóa phần cứng:</string>
+    <string name="hardware_opt_details">• 0% CPU khi không mở YouTube\n• Hoàn toàn ngoại tuyến (không dùng mạng), không tốn pin\n• Tự động kích hoạt khi có nút Bỏ qua quảng cáo</string>
+</resources>
