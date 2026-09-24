@@ -4,61 +4,28 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center"
-    android:background="#0B0F19"
-    android:padding="32dp">
+    android:background="#FFFFFF"
+    android:padding="28dp">
 
-    <!-- Biểu tượng trạng thái -->
-    <TextView
-        android:id="@+id/tvStatusIcon"
-        android:layout_width="96dp"
-        android:layout_height="96dp"
-        android:gravity="center"
-        android:textSize="42sp"
-        android:text="▶"
-        android:textColor="#EF4444"
-        android:background="@drawable/bg_circle" />
-
-    <!-- Tiêu đề trạng thái -->
-    <TextView
-        android:id="@+id/tvStatusTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:text="Chưa Bật Trợ Năng"
-        android:textColor="#FFFFFF"
-        android:textSize="22sp"
-        android:textStyle="bold" />
-
-    <!-- Mô tả ngắn gọn -->
-    <TextView
-        android:id="@+id/tvStatusDesc"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:gravity="center"
-        android:text="Cấp quyền Hỗ trợ tiếp cận để app tự động bấm Bỏ qua quảng cáo YouTube."
-        android:textColor="#94A3B8"
-        android:textSize="14sp" />
-
-    <!-- Nút bấm chính -->
+    <!-- Nút bấm trung tâm duy nhất -->
     <Button
         android:id="@+id/btnToggleService"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_marginTop="36dp"
-        android:text="BẬT DỊCH VỤ TRỢ NĂNG"
+        android:layout_height="64dp"
+        android:text="BẬT TRỢ NĂNG"
+        android:textSize="17sp"
         android:textStyle="bold"
-        android:textColor="#000000"
-        android:backgroundTint="#00D2FF" />
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#0F172A" />
 
-    <!-- Nút phụ Android 13+ -->
+    <!-- Nút phụ tối giản mở khóa cài đặt trên Android 13+ -->
     <Button
         android:id="@+id/btnUnlockSettings"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="16dp"
         android:text="Mở khóa cài đặt (Android 13+)"
-        android:textColor="#94A3B8"
+        android:textColor="#64748B"
         android:textSize="13sp"
         android:background="?android:attr/selectableItemBackground" />
 
